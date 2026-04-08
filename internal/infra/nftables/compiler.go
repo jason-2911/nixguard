@@ -28,6 +28,8 @@ const (
 type PredefinedFilters struct {
 	BogonFilter   bool     // Drop traffic from bogon networks on WAN interfaces
 	RFC1918Filter bool     // Drop RFC1918 (private) source addresses on WAN interfaces
+	RPFilter      bool     // Reverse path filtering (anti-spoofing via fib lookup)
+	FragmentDrop  bool     // Drop IP fragments (defense-in-depth)
 	WANInterfaces []string // Interfaces where predefined filters apply
 }
 
@@ -81,10 +83,15 @@ func CompileRuleset(rules []firewall.Rule, aliases []firewall.Alias, filters *Pr
 	b.WriteString("\t\t# Connection tracking\n")
 	b.WriteString("\t\tct state established,related accept\n")
 	b.WriteString("\t\tct state invalid drop\n\n")
-	b.WriteString("\t\t# Fragment reassembly (nf_defrag auto-loaded by ct)\n")
-	b.WriteString("\t\tip frag-off & 0x1fff != 0 counter drop\n\n")
-	b.WriteString("\t\t# Reverse path filtering (anti-spoofing)\n")
-	b.WriteString("\t\tfib saddr . iif oif missing drop\n\n")
+
+	if filters != nil && filters.FragmentDrop {
+		b.WriteString("\t\t# Fragment reassembly (nf_defrag auto-loaded by ct)\n")
+		b.WriteString("\t\tip frag-off & 0x1fff != 0 counter drop\n\n")
+	}
+	if filters != nil && filters.RPFilter {
+		b.WriteString("\t\t# Reverse path filtering (anti-spoofing)\n")
+		b.WriteString("\t\tfib saddr . iif oif missing drop\n\n")
+	}
 
 	// Predefined filter rules (bogon/RFC1918) on WAN interfaces
 	if filters != nil {
@@ -119,10 +126,15 @@ func CompileRuleset(rules []firewall.Rule, aliases []firewall.Alias, filters *Pr
 	b.WriteString("\t\ttype filter hook forward priority filter; policy drop;\n\n")
 	b.WriteString("\t\tct state established,related accept\n")
 	b.WriteString("\t\tct state invalid drop\n\n")
-	b.WriteString("\t\t# Fragment reassembly (nf_defrag auto-loaded by ct)\n")
-	b.WriteString("\t\tip frag-off & 0x1fff != 0 counter drop\n\n")
-	b.WriteString("\t\t# Reverse path filtering (anti-spoofing)\n")
-	b.WriteString("\t\tfib saddr . iif oif missing drop\n\n")
+
+	if filters != nil && filters.FragmentDrop {
+		b.WriteString("\t\t# Fragment reassembly (nf_defrag auto-loaded by ct)\n")
+		b.WriteString("\t\tip frag-off & 0x1fff != 0 counter drop\n\n")
+	}
+	if filters != nil && filters.RPFilter {
+		b.WriteString("\t\t# Reverse path filtering (anti-spoofing)\n")
+		b.WriteString("\t\tfib saddr . iif oif missing drop\n\n")
+	}
 
 	// Predefined filter rules (bogon/RFC1918) on WAN interfaces
 	if filters != nil {
