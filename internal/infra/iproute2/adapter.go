@@ -81,9 +81,15 @@ func (a *Adapter) GetInterfaceStatus(ctx context.Context, name string) (*network
 		for _, line := range strings.Split(ethResult.Stdout, "\n") {
 			line = strings.TrimSpace(line)
 			if strings.HasPrefix(line, "Speed:") {
-				status.Speed = strings.TrimSpace(strings.TrimPrefix(line, "Speed:"))
+				speed := strings.TrimSpace(strings.TrimPrefix(line, "Speed:"))
+				if speed != "" && speed != "Unknown!" {
+					status.Speed = speed
+				}
 			} else if strings.HasPrefix(line, "Duplex:") {
-				status.Duplex = strings.ToLower(strings.TrimSpace(strings.TrimPrefix(line, "Duplex:")))
+				duplex := strings.ToLower(strings.TrimSpace(strings.TrimPrefix(line, "Duplex:")))
+				if duplex != "" && duplex != "unknown" {
+					status.Duplex = duplex
+				}
 			}
 		}
 	}
@@ -494,9 +500,15 @@ func (a *Adapter) DiscoverInterfaces(ctx context.Context) ([]network.Interface, 
 			for _, line := range strings.Split(ethResult.Stdout, "\n") {
 				line = strings.TrimSpace(line)
 				if strings.HasPrefix(line, "Speed:") {
-					status.Speed = strings.TrimSpace(strings.TrimPrefix(line, "Speed:"))
+					speed := strings.TrimSpace(strings.TrimPrefix(line, "Speed:"))
+					if speed != "" && speed != "Unknown!" {
+						status.Speed = speed
+					}
 				} else if strings.HasPrefix(line, "Duplex:") {
-					status.Duplex = strings.ToLower(strings.TrimSpace(strings.TrimPrefix(line, "Duplex:")))
+					duplex := strings.ToLower(strings.TrimSpace(strings.TrimPrefix(line, "Duplex:")))
+					if duplex != "" && duplex != "unknown" {
+						status.Duplex = duplex
+					}
 				}
 			}
 		}
