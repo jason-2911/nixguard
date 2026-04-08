@@ -66,3 +66,9 @@ data/pcap/
 data/geoip/
 data/*.db-shm
 data/*.db-wal
+**/data/*.db-shm
+**/data/*.db-wal
+**/data/*.db
+
+# Compiled binaries in subdirs
+cmd/*/nixguard-*
