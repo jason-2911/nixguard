@@ -55,20 +55,53 @@ func NewService(
 // ═══════════════════════════════════════════════════════════════
 
 func (s *Service) ListInterfaces(ctx context.Context) ([]network.Interface, error) {
-	ifaces, err := s.ifaces.List(ctx)
+	// Get configured interfaces from DB
+	dbIfaces, err := s.ifaces.List(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Enrich with live status
-	for i := range ifaces {
-		status, err := s.engine.GetInterfaceStatus(ctx, ifaces[i].Name)
-		if err == nil {
-			ifaces[i].Status = *status
+	// Discover all system interfaces with live status
+	sysIfaces, err := s.engine.DiscoverInterfaces(ctx)
+	if err != nil {
+		s.log.Warn("interface discovery failed, using DB only", slog.String("error", err.Error()))
+		// Fallback: enrich DB records with individual status calls
+		for i := range dbIfaces {
+			if status, err := s.engine.GetInterfaceStatus(ctx, dbIfaces[i].Name); err == nil {
+				dbIfaces[i].Status = *status
+			}
+		}
+		return dbIfaces, nil
+	}
+
+	// Build lookup of DB interfaces by name
+	dbByName := make(map[string]*network.Interface, len(dbIfaces))
+	for i := range dbIfaces {
+		dbByName[dbIfaces[i].Name] = &dbIfaces[i]
+	}
+
+	// Merge: for each system interface, overlay DB config if it exists
+	result := make([]network.Interface, 0, len(sysIfaces))
+	for _, sys := range sysIfaces {
+		if db, ok := dbByName[sys.Name]; ok {
+			// DB record exists — use DB config + live status
+			db.Status = sys.Status
+			db.MAC = sys.MAC
+			db.MTU = sys.MTU
+			result = append(result, *db)
+			delete(dbByName, sys.Name)
+		} else {
+			// No DB record — show discovered interface as-is
+			result = append(result, sys)
 		}
 	}
 
-	return ifaces, nil
+	// Append any DB-only interfaces (e.g., not yet created on system)
+	for _, db := range dbByName {
+		result = append(result, *db)
+	}
+
+	return result, nil
 }
 
 func (s *Service) GetInterface(ctx context.Context, id string) (*network.Interface, error) {

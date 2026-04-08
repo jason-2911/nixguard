@@ -42,6 +42,7 @@ type GatewayGroupRepository interface {
 // NetworkEngine is the interface to Linux networking subsystem (iproute2).
 type NetworkEngine interface {
 	// Interface operations
+	DiscoverInterfaces(ctx context.Context) ([]Interface, error)
 	GetInterfaceStatus(ctx context.Context, name string) (*InterfaceStatus, error)
 	SetInterfaceUp(ctx context.Context, name string) error
 	SetInterfaceDown(ctx context.Context, name string) error

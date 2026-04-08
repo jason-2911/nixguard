@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Typography, Table, Button, Space, Tag, Card, Row, Col, Statistic, Modal, Descriptions,
 } from 'antd';
 import {
   ReloadOutlined, GlobalOutlined, ArrowUpOutlined, ArrowDownOutlined, InfoCircleOutlined,
 } from '@ant-design/icons';
+import { useAutoRefresh } from '@hooks/useAutoRefresh';
 import { apiClient } from '@api/client';
 
 const { Title } = Typography;
@@ -32,12 +33,13 @@ export default function InterfacesPage() {
   const [loading, setLoading] = useState(false);
   const [detail, setDetail] = useState<NetIface | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try { const r = await apiClient.get('/network/interfaces'); setIfaces(r.data || []); } catch {}
     setLoading(false);
-  };
-  useEffect(() => { load(); }, []);
+  }, []);
+  useEffect(() => { load(); }, [load]);
+  useAutoRefresh(() => { void load(); }, 5000);
 
   const columns = [
     { title: 'Interface', key: 'name', render: (_: any, r: NetIface) => (

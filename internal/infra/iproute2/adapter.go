@@ -433,6 +433,109 @@ func isIPv6Route(route network.Route) bool {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// Interface Discovery
+// ═══════════════════════════════════════════════════════════════
+
+// DiscoverInterfaces returns all system network interfaces with live status.
+func (a *Adapter) DiscoverInterfaces(ctx context.Context) ([]network.Interface, error) {
+	// Get all links
+	result, err := a.exec.Run(ctx, "ip", "-j", "-s", "link", "show")
+	if err != nil {
+		return nil, fmt.Errorf("ip link show: %w", err)
+	}
+
+	var links []ipLinkJSON
+	if err := json.Unmarshal([]byte(result.Stdout), &links); err != nil {
+		return nil, fmt.Errorf("parse ip link json: %w", err)
+	}
+
+	// Get all addresses in one call
+	addrResult, err := a.exec.Run(ctx, "ip", "-j", "addr", "show")
+	addrMap := make(map[string][]string) // ifname → []addresses
+	if err == nil {
+		var allAddrs []struct {
+			IfName   string `json:"ifname"`
+			AddrInfo []struct {
+				Local     string `json:"local"`
+				PrefixLen int    `json:"prefixlen"`
+			} `json:"addr_info"`
+		}
+		if json.Unmarshal([]byte(addrResult.Stdout), &allAddrs) == nil {
+			for _, a := range allAddrs {
+				for _, ai := range a.AddrInfo {
+					addrMap[a.IfName] = append(addrMap[a.IfName], fmt.Sprintf("%s/%d", ai.Local, ai.PrefixLen))
+				}
+			}
+		}
+	}
+
+	var ifaces []network.Interface
+	for _, link := range links {
+		ifType := detectInterfaceType(link.IfName, link.LinkType)
+
+		status := network.InterfaceStatus{
+			OperState: link.OperState,
+			Carrier:   link.Carrier == 1,
+			Addresses: addrMap[link.IfName],
+		}
+		if link.Stats64 != nil {
+			status.RxBytes = link.Stats64.RxBytes
+			status.TxBytes = link.Stats64.TxBytes
+			status.RxPackets = link.Stats64.RxPackets
+			status.TxPackets = link.Stats64.TxPackets
+			status.RxErrors = link.Stats64.RxErrors
+			status.TxErrors = link.Stats64.TxErrors
+			status.RxDropped = link.Stats64.RxDropped
+			status.TxDropped = link.Stats64.TxDropped
+		}
+
+		// Try ethtool for speed/duplex (best effort)
+		if ethResult, err := a.exec.Run(ctx, "ethtool", link.IfName); err == nil {
+			for _, line := range strings.Split(ethResult.Stdout, "\n") {
+				line = strings.TrimSpace(line)
+				if strings.HasPrefix(line, "Speed:") {
+					status.Speed = strings.TrimSpace(strings.TrimPrefix(line, "Speed:"))
+				} else if strings.HasPrefix(line, "Duplex:") {
+					status.Duplex = strings.ToLower(strings.TrimSpace(strings.TrimPrefix(line, "Duplex:")))
+				}
+			}
+		}
+
+		iface := network.Interface{
+			ID:      link.IfName, // use name as ID for discovered interfaces
+			Name:    link.IfName,
+			Type:    ifType,
+			Enabled: link.OperState == "UP" || link.OperState == "UNKNOWN",
+			MTU:     link.MTU,
+			MAC:     link.Address,
+			Status:  status,
+		}
+		ifaces = append(ifaces, iface)
+	}
+
+	return ifaces, nil
+}
+
+func detectInterfaceType(name, linkType string) network.InterfaceType {
+	switch {
+	case name == "lo" || linkType == "loopback":
+		return network.IfTypeLoopback
+	case strings.HasPrefix(name, "br") || strings.HasPrefix(name, "docker") || linkType == "bridge":
+		return network.IfTypeBridge
+	case strings.HasPrefix(name, "bond"):
+		return network.IfTypeBond
+	case strings.Contains(name, "."):
+		return network.IfTypeVLAN
+	case strings.HasPrefix(name, "vxlan"):
+		return network.IfTypeVXLAN
+	case strings.HasPrefix(name, "wg"):
+		return network.IfTypePhysical
+	default:
+		return network.IfTypePhysical
+	}
+}
+
+// ═══════════════════════════════════════════════════════════════
 // JSON parse types for ip -j output
 // ═══════════════════════════════════════════════════════════════
 
@@ -442,6 +545,7 @@ type ipLinkJSON struct {
 	Carrier   int          `json:"carrier"`
 	MTU       int          `json:"mtu"`
 	Address   string       `json:"address"`
+	LinkType  string       `json:"link_type"`
 	Stats64   *linkStats64 `json:"stats64"`
 }
 
