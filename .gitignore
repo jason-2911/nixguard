@@ -1,0 +1,68 @@
+# Binaries
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Go
+vendor/
+*.test
+coverage.out
+coverage.html
+
+# Frontend
+web/node_modules/
+web/dist/
+web/.cache/
+web/.vite/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Secrets
+*.pem
+*.key
+*.crt
+!configs/defaults/*.yaml
+
+# Database
+*.db
+*.sqlite
+
+# Logs
+*.log
+
+# Build artifacts
+*.tar.gz
+*.tar.gz.*
+*.zip
+
+# Codex
+.codex
+
+# Compiled server binaries at project root
+/nixguard-server
+/nixguard-agent
+/nixguard-cli
+/nixguard-worker
+
+# Runtime data files
+data/nftables/*.nft
+data/pcap/
+data/geoip/
+data/*.db-shm
+data/*.db-wal
