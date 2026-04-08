@@ -550,6 +550,10 @@
 - [~] **General Settings** — GeneralSettings model defined (hostname, DNS, timezone)
 - [x] **Network Interfaces**
   - [x] Interface assignment
+  - [x] Interface auto-discovery (DiscoverInterfaces scans all system interfaces via ip -j)
+  - [x] Live status display (oper_state, MAC, MTU, IP addresses, speed, duplex, carrier)
+  - [x] Live traffic stats (RX/TX bytes, packets, errors, drops per interface)
+  - [x] Interface type auto-detection (physical, loopback, bridge, bond, vlan, vxlan)
   - [x] VLAN configuration (CreateVLAN in iproute2)
   - [x] LAGG / bonding (CreateBond in iproute2)
   - [x] Bridge configuration (CreateBridge in iproute2)
@@ -607,14 +611,15 @@
 | 14. Web & API | 25 | 10 | 3 | 12 | **40%** |
 | 15. Plugin System | 7 | 0 | 1 | 6 | **0%** |
 | 16. Backup & Restore | 14 | 0 | 2 | 12 | **0%** |
-| 17. System Mgmt | 25 | 4 | 5 | 16 | **16%** |
+| 17. System Mgmt | 29 | 8 | 5 | 16 | **28%** |
 | 18. Additional | 18 | 0 | 1 | 17 | **0%** |
-| **TOTAL** | **436** | **69** | **76** | **291** | **16%** |
+| **TOTAL** | **440** | **73** | **76** | **291** | **17%** |
 
-**Phase 1 (Core Firewall & Network): ~89% complete**
+**Phase 1 (Core Firewall & Network): ~91% complete**
 - Firewall rules, aliases, NAT, conntrack, live traffic: **production-ready**
 - Static routing, gateway management, policy routing: **production-ready**
 - Fragment reassembly, bogon/RFC1918 filtering, spoofed source detection: **production-ready**
 - GeoIP blocking with MaxMind download, NAT reflection, IPv6 NAT66: **production-ready**
 - URL table auto-refresh, traffic verdict display: **production-ready**
+- Network interface auto-discovery with live status/stats: **production-ready**
 - Remaining: NAT-PMP/UPnP, dynamic routing (FRR), multi-path routing — requires external daemons (Phase 2+)
