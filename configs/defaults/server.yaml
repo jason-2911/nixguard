@@ -1,0 +1,55 @@
+# NixGuard Server Configuration
+# Copy to /etc/nixguard/server.yaml and customize
+
+server:
+  listen_addr: "0.0.0.0:8443"
+  tls_cert: "/etc/nixguard/certs/server.crt"
+  tls_key: "/etc/nixguard/certs/server.key"
+  cors_origins:
+    - "https://localhost:3000"
+  rate_limit: 100
+
+auth:
+  jwt_secret: ""  # MUST be set in production
+  token_expiry: "24h"
+  session_timeout: "30m"
+  max_login_attempts: 5
+  lockout_duration: "15m"
+  mfa_enabled: false
+
+database:
+  driver: "sqlite"
+  dsn: "/var/lib/nixguard/nixguard.db"
+
+log:
+  level: "info"    # debug, info, warn, error
+  format: "json"   # json, text
+
+agent:
+  socket_path: "/var/run/nixguard/agent.sock"
+
+modules:
+  firewall:
+    enabled: true
+  network:
+    enabled: true
+  vpn:
+    enabled: true
+  dns:
+    enabled: true
+  dhcp:
+    enabled: true
+  ids:
+    enabled: false
+  proxy:
+    enabled: false
+  loadbalancer:
+    enabled: false
+  ha:
+    enabled: false
+  traffic_shaper:
+    enabled: false
+  captive_portal:
+    enabled: false
+  monitor:
+    enabled: true

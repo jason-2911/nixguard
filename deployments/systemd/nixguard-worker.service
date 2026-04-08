@@ -1,0 +1,22 @@
+[Unit]
+Description=NixGuard Background Worker
+Documentation=https://github.com/nixguard/nixguard
+After=network-online.target nixguard-server.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=nixguard
+Group=nixguard
+ExecStart=/usr/local/bin/nixguard-worker --config /etc/nixguard/server.yaml
+Restart=on-failure
+RestartSec=10
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/nixguard /var/log/nixguard
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

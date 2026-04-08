@@ -1,0 +1,218 @@
+syntax = "proto3";
+
+package nixguard.v1;
+
+option go_package = "github.com/nixguard/nixguard/api/proto/v1;v1";
+
+// FirewallService manages firewall rules, aliases, and NAT.
+service FirewallService {
+  // Rules
+  rpc ListRules(ListRulesRequest) returns (ListRulesResponse);
+  rpc GetRule(GetRuleRequest) returns (Rule);
+  rpc CreateRule(CreateRuleRequest) returns (Rule);
+  rpc UpdateRule(UpdateRuleRequest) returns (Rule);
+  rpc DeleteRule(DeleteRuleRequest) returns (DeleteRuleResponse);
+  rpc ReorderRules(ReorderRulesRequest) returns (ReorderRulesResponse);
+
+  // Aliases
+  rpc ListAliases(ListAliasesRequest) returns (ListAliasesResponse);
+  rpc CreateAlias(CreateAliasRequest) returns (Alias);
+  rpc UpdateAlias(UpdateAliasRequest) returns (Alias);
+  rpc DeleteAlias(DeleteAliasRequest) returns (DeleteAliasResponse);
+
+  // NAT
+  rpc ListNATRules(ListNATRulesRequest) returns (ListNATRulesResponse);
+  rpc CreateNATRule(CreateNATRuleRequest) returns (NATRule);
+
+  // State Table
+  rpc ListStates(ListStatesRequest) returns (ListStatesResponse);
+  rpc FlushStates(FlushStatesRequest) returns (FlushStatesResponse);
+}
+
+// ── Messages ───────────────────────────────────────────────────
+
+message Rule {
+  string id = 1;
+  string interface = 2;
+  string direction = 3;  // in, out
+  string action = 4;     // pass, block, reject
+  string protocol = 5;
+  Address source = 6;
+  Address destination = 7;
+  bool log = 8;
+  string description = 9;
+  bool enabled = 10;
+  int32 order = 11;
+  bool is_floating = 12;
+  repeated string interfaces = 13;
+  string gateway = 14;
+  RuleStats stats = 15;
+  string created_at = 16;
+  string updated_at = 17;
+}
+
+message Address {
+  string type = 1;   // any, single, network, alias, geoip
+  string value = 2;
+  string port = 3;
+  bool not = 4;
+}
+
+message RuleStats {
+  uint64 evaluations = 1;
+  uint64 packets = 2;
+  uint64 bytes = 3;
+}
+
+message Alias {
+  string id = 1;
+  string name = 2;
+  string type = 3;
+  string description = 4;
+  repeated string entries = 5;
+  string update_freq = 6;
+  bool enabled = 7;
+}
+
+message NATRule {
+  string id = 1;
+  string type = 2;        // port_forward, one_to_one, outbound
+  string interface = 3;
+  string protocol = 4;
+  Address source = 5;
+  Address destination = 6;
+  string redirect_target = 7;
+  string redirect_port = 8;
+  string description = 9;
+  bool enabled = 10;
+  bool nat_reflection = 11;
+}
+
+message State {
+  string protocol = 1;
+  string source_ip = 2;
+  int32 source_port = 3;
+  string dest_ip = 4;
+  int32 dest_port = 5;
+  string state = 6;
+  string direction = 7;
+  string interface = 8;
+  uint64 packets = 9;
+  uint64 bytes = 10;
+}
+
+// ── Requests / Responses ───────────────────────────────────────
+
+message ListRulesRequest {
+  string interface = 1;
+  string action = 2;
+  string protocol = 3;
+  int32 limit = 10;
+  int32 offset = 11;
+}
+
+message ListRulesResponse {
+  repeated Rule rules = 1;
+  int32 total = 2;
+}
+
+message GetRuleRequest {
+  string id = 1;
+}
+
+message CreateRuleRequest {
+  string interface = 1;
+  string direction = 2;
+  string action = 3;
+  string protocol = 4;
+  Address source = 5;
+  Address destination = 6;
+  bool log = 7;
+  string description = 8;
+  int32 order = 9;
+  bool is_floating = 10;
+  repeated string interfaces = 11;
+  string gateway = 12;
+}
+
+message UpdateRuleRequest {
+  string id = 1;
+  Rule rule = 2;
+}
+
+message DeleteRuleRequest {
+  string id = 1;
+}
+
+message DeleteRuleResponse {}
+
+message ReorderRulesRequest {
+  repeated string rule_ids = 1;
+}
+
+message ReorderRulesResponse {}
+
+message ListAliasesRequest {}
+message ListAliasesResponse {
+  repeated Alias aliases = 1;
+}
+
+message CreateAliasRequest {
+  string name = 1;
+  string type = 2;
+  string description = 3;
+  repeated string entries = 4;
+  string update_freq = 5;
+}
+
+message UpdateAliasRequest {
+  string id = 1;
+  Alias alias = 2;
+}
+
+message DeleteAliasRequest {
+  string id = 1;
+}
+
+message DeleteAliasResponse {}
+
+message ListNATRulesRequest {
+  string type = 1;
+}
+
+message ListNATRulesResponse {
+  repeated NATRule rules = 1;
+}
+
+message CreateNATRuleRequest {
+  string type = 1;
+  string interface = 2;
+  string protocol = 3;
+  Address source = 4;
+  Address destination = 5;
+  string redirect_target = 6;
+  string redirect_port = 7;
+  string description = 8;
+  bool nat_reflection = 9;
+}
+
+message ListStatesRequest {
+  string protocol = 1;
+  string source_ip = 2;
+  string dest_ip = 3;
+  int32 limit = 10;
+}
+
+message ListStatesResponse {
+  repeated State states = 1;
+  int32 total = 2;
+}
+
+message FlushStatesRequest {
+  string source_ip = 1;
+  string dest_ip = 2;
+}
+
+message FlushStatesResponse {
+  int32 flushed = 1;
+}

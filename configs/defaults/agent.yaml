@@ -1,0 +1,45 @@
+# NixGuard Agent Configuration
+# The agent runs as root and handles privileged system operations
+
+agent:
+  socket_path: "/var/run/nixguard/agent.sock"
+  allowed_commands:
+    # Firewall
+    - nft
+    - iptables
+    - ip6tables
+    - conntrack
+    # Networking
+    - ip
+    - ss
+    - tc
+    - bridge
+    - ethtool
+    # System
+    - systemctl
+    - journalctl
+    - sysctl
+    # VPN
+    - wg
+    - swanctl
+    - ipsec
+    - openvpn
+    # DNS
+    - unbound-control
+    - unbound-checkconf
+    # Diagnostics
+    - tcpdump
+    - ping
+    - traceroute
+    - mtr
+    - dig
+    # HAProxy
+    - haproxy
+    - socat
+    # Suricata
+    - suricata
+    - suricata-update
+
+log:
+  level: "info"
+  format: "json"

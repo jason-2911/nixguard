@@ -1,0 +1,58 @@
+# NixGuard Docker Compose - Development & Testing
+version: "3.8"
+
+services:
+  server:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile.server
+    ports:
+      - "8443:8443"
+    volumes:
+      - nixguard-data:/var/lib/nixguard
+      - nixguard-logs:/var/log/nixguard
+      - agent-socket:/var/run/nixguard
+    depends_on:
+      - agent
+    restart: unless-stopped
+    networks:
+      - nixguard
+
+  agent:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile.agent
+    privileged: true
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - SYS_ADMIN
+    volumes:
+      - agent-socket:/var/run/nixguard
+      - /etc/nixguard:/etc/nixguard
+      - /var/log/suricata:/var/log/suricata
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile.server
+    command: ["nixguard-worker", "--config", "/etc/nixguard/server.yaml"]
+    volumes:
+      - nixguard-data:/var/lib/nixguard
+      - agent-socket:/var/run/nixguard
+    depends_on:
+      - agent
+    restart: unless-stopped
+    networks:
+      - nixguard
+
+volumes:
+  nixguard-data:
+  nixguard-logs:
+  agent-socket:
+
+networks:
+  nixguard:
+    driver: bridge

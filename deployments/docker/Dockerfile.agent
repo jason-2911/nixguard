@@ -1,0 +1,37 @@
+# NixGuard Agent - Privileged container
+FROM golang:1.22-alpine AS builder
+
+RUN apk add --no-cache git make
+
+WORKDIR /build
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+RUN make build-agent
+
+FROM alpine:3.19
+
+# Install required system tools
+RUN apk add --no-cache \
+    nftables \
+    iptables \
+    iproute2 \
+    conntrack-tools \
+    tcpdump \
+    wireguard-tools \
+    strongswan \
+    unbound \
+    haproxy \
+    suricata \
+    bind-tools \
+    mtr \
+    ethtool \
+    socat
+
+COPY --from=builder /build/bin/nixguard-agent /usr/local/bin/
+COPY configs/defaults/agent.yaml /etc/nixguard/agent.yaml
+
+# Agent MUST run as root for system operations
+ENTRYPOINT ["nixguard-agent"]
+CMD ["--config", "/etc/nixguard/agent.yaml"]

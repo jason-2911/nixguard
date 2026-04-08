@@ -1,0 +1,19 @@
+[Unit]
+Description=NixGuard Privileged Agent
+Documentation=https://github.com/nixguard/nixguard
+After=network.target
+
+[Service]
+Type=simple
+ExecStartPre=/bin/mkdir -p /var/run/nixguard
+ExecStart=/usr/local/bin/nixguard-agent --config /etc/nixguard/agent.yaml
+Restart=on-failure
+RestartSec=3
+LimitNOFILE=65536
+
+# Agent runs as root (required for nftables, iproute2, systemctl)
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target

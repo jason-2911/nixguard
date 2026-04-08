@@ -1,0 +1,148 @@
+syntax = "proto3";
+
+package nixguard.v1;
+
+option go_package = "github.com/nixguard/nixguard/api/proto/v1;v1";
+
+// SystemService provides system management operations.
+service SystemService {
+  rpc GetHealth(GetHealthRequest) returns (GetHealthResponse);
+  rpc GetSystemInfo(GetSystemInfoRequest) returns (SystemInfo);
+  rpc GetMetrics(GetMetricsRequest) returns (SystemMetrics);
+  rpc ListServices(ListServicesRequest) returns (ListServicesResponse);
+  rpc ControlService(ControlServiceRequest) returns (ControlServiceResponse);
+  rpc RunDiagnostic(RunDiagnosticRequest) returns (DiagnosticResult);
+}
+
+// AgentService is the privileged agent gRPC interface (Unix socket only).
+service AgentService {
+  rpc Execute(ExecuteRequest) returns (ExecuteResponse);
+  rpc ApplyFirewall(ApplyFirewallRequest) returns (ApplyFirewallResponse);
+  rpc ApplyNetwork(ApplyNetworkRequest) returns (ApplyNetworkResponse);
+  rpc ControlService(ControlServiceRequest) returns (ControlServiceResponse);
+  rpc Capture(CaptureRequest) returns (stream CaptureResponse);
+}
+
+message GetHealthRequest {}
+message GetHealthResponse {
+  string status = 1;  // healthy, degraded, unhealthy
+  repeated ComponentHealth components = 2;
+  string timestamp = 3;
+}
+
+message ComponentHealth {
+  string name = 1;
+  string status = 2;
+  string message = 3;
+  int64 latency_ms = 4;
+}
+
+message GetSystemInfoRequest {}
+message SystemInfo {
+  string hostname = 1;
+  string version = 2;
+  string os = 3;
+  string kernel = 4;
+  string arch = 5;
+  string uptime = 6;
+  int32 cpu_count = 7;
+  uint64 total_memory_mb = 8;
+}
+
+message GetMetricsRequest {}
+message SystemMetrics {
+  double cpu_usage = 1;
+  double memory_usage = 2;
+  repeated DiskUsage disks = 3;
+  double load_1m = 4;
+  double load_5m = 5;
+  double load_15m = 6;
+}
+
+message DiskUsage {
+  string mount_point = 1;
+  double usage_percent = 2;
+  uint64 total_gb = 3;
+  uint64 used_gb = 4;
+}
+
+message ListServicesRequest {}
+message ListServicesResponse {
+  repeated ServiceStatus services = 1;
+}
+
+message ServiceStatus {
+  string name = 1;
+  string status = 2;  // running, stopped, failed
+  bool enabled = 3;
+  int32 pid = 4;
+  string uptime = 5;
+}
+
+message ControlServiceRequest {
+  string name = 1;
+  string action = 2;  // start, stop, restart, reload
+}
+
+message ControlServiceResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message RunDiagnosticRequest {
+  string tool = 1;    // ping, traceroute, dns_lookup, port_test
+  string target = 2;
+  map<string, string> options = 3;
+}
+
+message DiagnosticResult {
+  string tool = 1;
+  string output = 2;
+  int32 exit_code = 3;
+  double duration_ms = 4;
+}
+
+message ExecuteRequest {
+  string command = 1;
+  repeated string args = 2;
+  int32 timeout_ms = 3;
+}
+
+message ExecuteResponse {
+  int32 exit_code = 1;
+  string stdout = 2;
+  string stderr = 3;
+  int64 duration_ms = 4;
+}
+
+message ApplyFirewallRequest {
+  bytes ruleset = 1;  // nftables ruleset content
+}
+
+message ApplyFirewallResponse {
+  bool success = 1;
+  string error = 2;
+}
+
+message ApplyNetworkRequest {
+  string operation = 1;  // add_addr, del_addr, add_route, etc.
+  map<string, string> params = 2;
+}
+
+message ApplyNetworkResponse {
+  bool success = 1;
+  string error = 2;
+}
+
+message CaptureRequest {
+  string interface = 1;
+  string filter = 2;
+  int32 max_packets = 3;
+  int32 duration_sec = 4;
+  int32 snap_len = 5;
+}
+
+message CaptureResponse {
+  bytes data = 1;
+  int32 packet_count = 2;
+}

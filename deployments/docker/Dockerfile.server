@@ -1,0 +1,42 @@
+# NixGuard Server - Multi-stage Docker build
+# Stage 1: Build Go backend
+FROM golang:1.22-alpine AS go-builder
+
+RUN apk add --no-cache git make
+
+WORKDIR /build
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+RUN make build-server
+
+# Stage 2: Build React frontend
+FROM node:20-alpine AS web-builder
+
+WORKDIR /build/web
+COPY web/package.json web/package-lock.json* ./
+RUN npm ci
+
+COPY web/ .
+RUN npm run build
+
+# Stage 3: Production image
+FROM alpine:3.19
+
+RUN apk add --no-cache ca-certificates tzdata && \
+    addgroup -S nixguard && \
+    adduser -S nixguard -G nixguard && \
+    mkdir -p /var/lib/nixguard /var/log/nixguard /etc/nixguard && \
+    chown -R nixguard:nixguard /var/lib/nixguard /var/log/nixguard /etc/nixguard
+
+COPY --from=go-builder /build/bin/nixguard-server /usr/local/bin/
+COPY --from=web-builder /build/web/dist /usr/share/nixguard/web
+COPY configs/defaults/server.yaml /etc/nixguard/server.yaml
+
+USER nixguard
+
+EXPOSE 8443
+
+ENTRYPOINT ["nixguard-server"]
+CMD ["--config", "/etc/nixguard/server.yaml"]
