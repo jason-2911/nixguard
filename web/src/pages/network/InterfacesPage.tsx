@@ -46,7 +46,8 @@ export default function InterfacesPage() {
       <Space><GlobalOutlined /><b>{r.name}</b>{r.alias && <Tag>{r.alias}</Tag>}</Space>
     )},
     { title: 'Status', key: 'status', width: 80, render: (_: any, r: NetIface) => {
-      const up = r.status.oper_state?.toLowerCase() === 'up';
+      const state = r.status.oper_state?.toLowerCase();
+      const up = state === 'up' || state === 'unknown'; // loopback reports "unknown" when active
       return <Tag color={up ? 'green' : 'red'}>{up ? 'UP' : 'DOWN'}</Tag>;
     }},
     { title: 'Type', dataIndex: 'type', width: 90, render: (t: string) => <Tag>{t}</Tag> },

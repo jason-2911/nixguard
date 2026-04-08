@@ -65,14 +65,14 @@ func (a *Adapter) GetInterfaceStatus(ctx context.Context, name string) (*network
 
 	// Parse stats
 	if link.Stats64 != nil {
-		status.RxBytes = link.Stats64.RxBytes
-		status.TxBytes = link.Stats64.TxBytes
-		status.RxPackets = link.Stats64.RxPackets
-		status.TxPackets = link.Stats64.TxPackets
-		status.RxErrors = link.Stats64.RxErrors
-		status.TxErrors = link.Stats64.TxErrors
-		status.RxDropped = link.Stats64.RxDropped
-		status.TxDropped = link.Stats64.TxDropped
+		status.RxBytes = link.Stats64.Rx.Bytes
+		status.TxBytes = link.Stats64.Tx.Bytes
+		status.RxPackets = link.Stats64.Rx.Packets
+		status.TxPackets = link.Stats64.Tx.Packets
+		status.RxErrors = link.Stats64.Rx.Errors
+		status.TxErrors = link.Stats64.Tx.Errors
+		status.RxDropped = link.Stats64.Rx.Dropped
+		status.TxDropped = link.Stats64.Tx.Dropped
 	}
 
 	// Get speed/duplex via ethtool
@@ -479,14 +479,14 @@ func (a *Adapter) DiscoverInterfaces(ctx context.Context) ([]network.Interface, 
 			Addresses: addrMap[link.IfName],
 		}
 		if link.Stats64 != nil {
-			status.RxBytes = link.Stats64.RxBytes
-			status.TxBytes = link.Stats64.TxBytes
-			status.RxPackets = link.Stats64.RxPackets
-			status.TxPackets = link.Stats64.TxPackets
-			status.RxErrors = link.Stats64.RxErrors
-			status.TxErrors = link.Stats64.TxErrors
-			status.RxDropped = link.Stats64.RxDropped
-			status.TxDropped = link.Stats64.TxDropped
+			status.RxBytes = link.Stats64.Rx.Bytes
+			status.TxBytes = link.Stats64.Tx.Bytes
+			status.RxPackets = link.Stats64.Rx.Packets
+			status.TxPackets = link.Stats64.Tx.Packets
+			status.RxErrors = link.Stats64.Rx.Errors
+			status.TxErrors = link.Stats64.Tx.Errors
+			status.RxDropped = link.Stats64.Rx.Dropped
+			status.TxDropped = link.Stats64.Tx.Dropped
 		}
 
 		// Try ethtool for speed/duplex (best effort)
@@ -550,14 +550,18 @@ type ipLinkJSON struct {
 }
 
 type linkStats64 struct {
-	RxBytes   uint64 `json:"rx_bytes"`
-	TxBytes   uint64 `json:"tx_bytes"`
-	RxPackets uint64 `json:"rx_packets"`
-	TxPackets uint64 `json:"tx_packets"`
-	RxErrors  uint64 `json:"rx_errors"`
-	TxErrors  uint64 `json:"tx_errors"`
-	RxDropped uint64 `json:"rx_dropped"`
-	TxDropped uint64 `json:"tx_dropped"`
+	Rx struct {
+		Bytes   uint64 `json:"bytes"`
+		Packets uint64 `json:"packets"`
+		Errors  uint64 `json:"errors"`
+		Dropped uint64 `json:"dropped"`
+	} `json:"rx"`
+	Tx struct {
+		Bytes   uint64 `json:"bytes"`
+		Packets uint64 `json:"packets"`
+		Errors  uint64 `json:"errors"`
+		Dropped uint64 `json:"dropped"`
+	} `json:"tx"`
 }
 
 type ipAddrJSON struct {
